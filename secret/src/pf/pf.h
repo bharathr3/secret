@@ -39,7 +39,6 @@ class PF_FileHandle
 public:
 	fstream file;														// Added File for Filehandler
 	char *filename;
-	set<int> f_pages;
 
 	PF_FileHandle();                                                    // Default constructor
 	~PF_FileHandle();                                                   // Destructor
@@ -50,29 +49,47 @@ public:
 	unsigned GetNumberOfPages();                                        // Get the number of pages in the file
 };
 
+struct block_info
+{
+	char* fname;
+	int pg_num;
+};
+
 struct CacheBlock
 {
-	string key;
+	block_info block;
 	void* data;
 	bool d_bit;
 	CacheBlock* prev;
 	CacheBlock* next;
 };
 
+namespace std
+{
+    template<> struct less<block_info>
+    {
+       bool operator() (const block_info& lhs, const block_info& rhs)
+       {
+           return lhs.pg_num < rhs.pg_num;
+       }
+    };
+}
+
 class CacheRepPolicy
 {
 private:
-	map<string,CacheBlock*> h_map;
-	vector<CacheBlock*> empty_blocks;
+	map<block_info,CacheBlock*> h_map;
 	CacheBlock *begin;
 	CacheBlock *end;
 	CacheBlock *list;
 public:
+	multimap<char*,int> f_pages;
+	vector<CacheBlock*> empty_blocks;
 	CacheRepPolicy(size_t size);
 	~CacheRepPolicy();
 
-	void set(string key,void* data,int rw);
-	void* get(string key);
+	void set(block_info key,void* data,int rw);
+	CacheBlock* get(block_info key);
 
 private:
 	void remove_end(CacheBlock* block);
