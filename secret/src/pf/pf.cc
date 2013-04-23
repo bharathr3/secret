@@ -95,7 +95,7 @@ void CacheRepPolicy::set(block_info key,void* data,int rw)
 			}
 			remove_end(block);
 			h_map.erase(block->block);
-			memcpy(block->data,data,sizeof(data));
+			memcpy(&(block->data),&data,sizeof(data));
 			if(rw==1)
 				block->d_bit=true;
 			else
@@ -111,7 +111,8 @@ void CacheRepPolicy::set(block_info key,void* data,int rw)
 			empty_blocks.pop_back();
 			block->block.fname=key.fname;
 			block->block.pg_num=key.pg_num;
-			memcpy(block->data,data,sizeof(data));
+			block->data=(void*)malloc(sizeof(data));
+			memcpy(&(block->data),&data,sizeof(data));
 			if(rw==1)
 				block->d_bit=true;
 			else
@@ -125,6 +126,10 @@ void CacheRepPolicy::set(block_info key,void* data,int rw)
 CacheBlock* CacheRepPolicy::get(block_info key)
 {
 	CacheBlock *block=h_map[key];
+	cout<<endl;
+	for(int i=0;i<sizeof(block->data);i++)
+			cout<<(char*)(block->data)+i;
+	cout<<endl;
 	if(block)
 	{
 		remove_end(block);
@@ -188,6 +193,7 @@ RC PF_Manager::OpenFile(const char *fileName, PF_FileHandle &fileHandle)
 		fileHandle.file.open(fileName,ios::in|ios::out|ios::binary);
 		if(fileHandle.file.is_open())
 		{
+			fileHandle.filename=(char*)malloc(sizeof(fileName));
 			strcpy(fileHandle.filename,fileName);
 			return 0;
 		}
@@ -244,6 +250,10 @@ RC PF_FileHandle::ReadPage(PageNum pageNum, void *data)
 		temp.fname=filename;
 		temp.pg_num=pageNum;
 		data=PF_Manager::_lru_cache->get(temp);
+		cout<<endl;
+		for(int i=0;i<sizeof(data);i++)
+				cout<<(char*)data+i;
+		cout<<endl;
 		if(data!=NULL)
 			return 0;
 		else
@@ -282,7 +292,7 @@ RC PF_FileHandle::AppendPage(const void *data)
 		temp.fname=filename;
 		temp.pg_num=GetNumberOfPages()+1;
 		PF_Manager::_lru_cache->set(temp,(char*)data,1);
-		PF_Manager::_lru_cache->f_pages.insert(pair<char*, int>(filename,(int)(GetNumberOfPages()+1)));
+		PF_Manager::_lru_cache->f_pages.insert(pair<char*, int>(filename,(int)(temp.pg_num)));
 		return 0;
 	}
 }
