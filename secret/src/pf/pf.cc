@@ -23,6 +23,8 @@ PF_Manager::PF_Manager(int cacheNumPages)
 
 PF_Manager::~PF_Manager()
 {
+	delete _pf_manager;
+	delete _lru_cache;
 }
 
 CacheRepPolicy::CacheRepPolicy(size_t size)
@@ -51,7 +53,7 @@ void CacheRepPolicy::set(block_info key,void* data,int rw)
 	if(block)
 	{
 		remove_end(block);
-		memcpy(block->data,data,sizeof(data));
+		memcpy(&(block->data),&data,sizeof(data));
 		if(rw==1)
 			block->d_bit=true;
 		else
@@ -93,6 +95,7 @@ void CacheRepPolicy::set(block_info key,void* data,int rw)
 				if(page_arr[count]!=block->block.pg_num)
 					PF_Manager::_lru_cache->f_pages.insert(pair<char*, int>(block->block.fname,page_arr[count]));
 			}
+			delete []page_arr;
 			remove_end(block);
 			h_map.erase(block->block);
 			memcpy(&(block->data),&data,sizeof(data));
@@ -126,10 +129,6 @@ void CacheRepPolicy::set(block_info key,void* data,int rw)
 CacheBlock* CacheRepPolicy::get(block_info key)
 {
 	CacheBlock *block=h_map[key];
-	cout<<endl;
-	for(int i=0;i<sizeof(block->data);i++)
-			cout<<(char*)(block->data)+i;
-	cout<<endl;
 	if(block)
 	{
 		remove_end(block);
@@ -221,6 +220,7 @@ RC PF_Manager::CloseFile(PF_FileHandle &fileHandle)
 			_lru_cache->empty_blocks.push_back(data);
 		}
 		_lru_cache->f_pages.erase((char*)fileHandle.filename);
+		free(fileHandle.filename);
 		fileHandle.file.close();
 		if(fileHandle.file.is_open())
 			return -1;
@@ -249,11 +249,8 @@ RC PF_FileHandle::ReadPage(PageNum pageNum, void *data)
 		block_info temp;
 		temp.fname=filename;
 		temp.pg_num=pageNum;
-		data=PF_Manager::_lru_cache->get(temp);
-		cout<<endl;
-		for(int i=0;i<sizeof(data);i++)
-				cout<<(char*)data+i;
-		cout<<endl;
+		CacheBlock* read_block=PF_Manager::_lru_cache->get(temp);
+		memcpy(data,(read_block->data),4096*sizeof(unsigned));
 		if(data!=NULL)
 			return 0;
 		else
@@ -290,7 +287,7 @@ RC PF_FileHandle::AppendPage(const void *data)
 	{
 		block_info temp;
 		temp.fname=filename;
-		temp.pg_num=GetNumberOfPages()+1;
+		temp.pg_num=GetNumberOfPages();
 		PF_Manager::_lru_cache->set(temp,(char*)data,1);
 		PF_Manager::_lru_cache->f_pages.insert(pair<char*, int>(filename,(int)(temp.pg_num)));
 		return 0;
@@ -310,6 +307,8 @@ unsigned PF_FileHandle::GetNumberOfPages()
 		max=((max>(*it).second)?max:(*it).second);
 	}
 	unsigned file_page_count=file.tellg()/PF_PAGE_SIZE;
-	max = max>(int)file_page_count?max:file_page_count;
+	if(file.tellg()==0 and max==-1)
+		return 0;
+	max = max>((int)file_page_count+1)?max:(file_page_count+1);
 	return ((unsigned int)max);
 }

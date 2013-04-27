@@ -91,8 +91,6 @@ int PFTest_3(PF_Manager *pf)
 	rc = fileHandle.AppendPage(data);
 	assert(rc == success);
 
-	cout<<"Check 1"<<endl;
-
 	// Get the number of pages
 	unsigned count = fileHandle.GetNumberOfPages();
 	assert(count == (unsigned)1);
@@ -108,20 +106,10 @@ int PFTest_3(PF_Manager *pf)
 	rc = fileHandle.WritePage(0, data);
 	assert(rc == success);
 
-	cout<<"Check 2"<<endl;
-
 	// Read the page
 	void *buffer = malloc(PF_PAGE_SIZE);
 	rc = fileHandle.ReadPage(0, buffer);
 	assert(rc == success);
-
-	cout<<"Check 3"<<endl;
-
-	for(int i=0;i<sizeof(data);i++)
-		cout<<(char*)data+i;
-	cout<<endl;
-	for(int i=0;i<sizeof(buffer);i++)
-		cout<<(char*)buffer+i;
 
 	// Check the integrity
 	rc = memcmp(data, buffer, PF_PAGE_SIZE);
@@ -131,16 +119,12 @@ int PFTest_3(PF_Manager *pf)
 	rc = pf->CloseFile(fileHandle);
 	assert(rc == success);
 
-	cout<<"Check 4"<<endl;
-
 	free(data);
 	free(buffer);
 
 	// DestroyFile
 	rc = pf->DestroyFile(fileName.c_str());
 	assert(rc == success);
-
-	cout<<"Check 5"<<endl;
 
 	if(!FileExists(fileName.c_str()))
 	{
@@ -159,14 +143,11 @@ void pfTest()
 {
 	PF_Manager *pf = PF_Manager::Instance(10);
 
-	/*remove("test");
+	remove("test");
 	PFTest_1(pf);
-	cout<<endl<<"Test 1 done"<<endl;
 	remove("test");
 	PFTest_2(pf);
-	cout<<endl<<"Test 2 done"<<endl;*/
 	PFTest_3(pf);
-	cout<<endl<<"Test 3 done"<<endl;
 }
 
 int main()
