@@ -15,8 +15,8 @@ typedef int RC;
 // Record ID
 typedef struct
 {
-  unsigned pageNum;
-  unsigned slotNum;
+	unsigned pageNum;
+	unsigned slotNum;
 } RID;
 
 // Attribute
@@ -25,19 +25,19 @@ typedef enum { TypeInt = 0, TypeReal, TypeVarChar } AttrType;
 typedef unsigned AttrLength;
 
 struct Attribute {
-    string   name;     // attribute name
-    AttrType type;     // attribute type
-    AttrLength length; // attribute length
+	string   name;     // attribute name
+	AttrType type;     // attribute type
+	AttrLength length; // attribute length
 };
 
 // Comparison Operator
 typedef enum { EQ_OP = 0,  // =
-           LT_OP,      // <
-           GT_OP,      // >
-           LE_OP,      // <=
-           GE_OP,      // >=
-           NE_OP,      // !=
-           NO_OP       // no condition
+	LT_OP,      // <
+	GT_OP,      // >
+	LE_OP,      // <=
+	GE_OP,      // >=
+	NE_OP,      // !=
+	NO_OP       // no condition
 } CompOp;
 
 # define RM_EOF (-1)  // end of a scan operator
@@ -53,12 +53,12 @@ typedef enum { EQ_OP = 0,  // =
 
 class RM_ScanIterator {
 public:
-  RM_ScanIterator() {};
-  ~RM_ScanIterator() {};
+	RM_ScanIterator() {};
+	~RM_ScanIterator() {};
 
-  // "data" follows the same format as RM::insertTuple()
-  RC getNextTuple(RID &rid, void *data);
-  RC close() { return -1; };
+	// "data" follows the same format as RM::insertTuple()
+	RC getNextTuple(RID &rid, void *data);
+	RC close() { return -1; };
 };
 
 
@@ -66,59 +66,64 @@ public:
 class RM
 {
 public:
-  static RM* Instance();
+	PF_Manager *pf;
+	int num_tables;
 
-  RC createTable(const string tableName, const vector<Attribute> &attrs);
+	static RM* Instance();
 
-  RC deleteTable(const string tableName);
+	void createCatalog();
 
-  RC getAttributes(const string tableName, vector<Attribute> &attrs);
+	RC createTable(const string tableName, const vector<Attribute> &attrs);
 
-  //  Format of the data passed into the function is the following:
-  //  1) data is a concatenation of values of the attributes
-  //  2) For int and real: use 4 bytes to store the value;
-  //     For varchar: use 4 bytes to store the length of characters, then store the actual characters.
-  //  !!!The same format is used for updateTuple(), the returned data of readTuple(), and readAttribute()
-  RC insertTuple(const string tableName, const void *data, RID &rid);
+	RC deleteTable(const string tableName);
 
-  RC deleteTuples(const string tableName);
+	RC getAttributes(const string tableName, vector<Attribute> &attrs);
 
-  RC deleteTuple(const string tableName, const RID &rid);
+	//  Format of the data passed into the function is the following:
+	//  1) data is a concatenation of values of the attributes
+	//  2) For int and real: use 4 bytes to store the value;
+	//     For varchar: use 4 bytes to store the length of characters, then store the actual characters.
+	//  !!!The same format is used for updateTuple(), the returned data of readTuple(), and readAttribute()
+	RC insertTuple(const string tableName, const void *data, RID &rid, int tupsize=0);
 
-  // Assume the rid does not change after update
-  RC updateTuple(const string tableName, const void *data, const RID &rid);
+	RC deleteTuples(const string tableName);
 
-  RC readTuple(const string tableName, const RID &rid, void *data);
+	RC deleteTuple(const string tableName, const RID &rid);
 
-  RC readAttribute(const string tableName, const RID &rid, const string attributeName, void *data);
+	// Assume the rid does not change after update
+	RC updateTuple(const string tableName, const void *data, const RID &rid);
 
-  RC reorganizePage(const string tableName, const unsigned pageNumber);
+	RC readTuple(const string tableName, const RID &rid, void *data);
 
-  // scan returns an iterator to allow the caller to go through the results one by one. 
-  RC scan(const string tableName,
-      const string conditionAttribute,
-      const CompOp compOp,                  // comparision type such as "<" and "="
-      const void *value,                    // used in the comparison
-      const vector<string> &attributeNames, // a list of projected attributes
-      RM_ScanIterator &rm_ScanIterator);
+	RC readAttribute(const string tableName, const RID &rid, const string attributeName, void *data);
+
+	RC reorganizePage(const string tableName, const unsigned pageNumber);
+
+	// scan returns an iterator to allow the caller to go through the results one by one.
+	RC scan(const string tableName,
+			const string conditionAttribute,
+			const CompOp compOp,                  // comparision type such as "<" and "="
+			const void *value,                    // used in the comparison
+			const vector<string> &attributeNames, // a list of projected attributes
+			RM_ScanIterator &rm_ScanIterator);
 
 
-// Extra credit
+	// Extra credit
 public:
-  RC dropAttribute(const string tableName, const string attributeName);
+	RC dropAttribute(const string tableName, const string attributeName);
 
-  RC addAttribute(const string tableName, const Attribute attr);
+	RC addAttribute(const string tableName, const Attribute attr);
 
-  RC reorganizeTable(const string tableName);
+	RC reorganizeTable(const string tableName);
 
 
 
 protected:
-  RM();
-  ~RM();
+	RM();
+	~RM();
 
 private:
-  static RM *_rm;
+	static RM *_rm;
 };
 
 #endif

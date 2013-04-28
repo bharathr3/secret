@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <cassert>
+#include <string.h>
 
 #include "rm.h"
 
@@ -8,14 +9,18 @@ using namespace std;
 
 void rmTest()
 {
-  // RM *rm = RM::Instance();
-  // write your own testing cases here
+	remove("Tables");
+	remove("Columns");
+	remove("TableInfo");
+	remove("ColumnInfo");
+	RM *rm = RM::Instance();
+	// write your own testing cases here
 }
 
-/*int main()
+int main()
 {
-  cout << "test..." << endl;
-  rmTest();
-  // other tests go here
-  cout << "OK" << endl;
-}*/
+	cout<<"Begin"<<endl;
+	rmTest();
+	//other tests go here
+	cout<<"End"<<endl;
+}
