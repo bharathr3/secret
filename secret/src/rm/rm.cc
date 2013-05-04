@@ -37,8 +37,10 @@ void RM::load_catalog() {
 	RC rc;
 	PF_FileHandle fileHandle;
 	void *buffer = malloc(4096);
-	pf->OpenFile("columnInfo", fileHandle);
+	pf->OpenFile("ColumnInfo", fileHandle);
 	int num_page = fileHandle.GetNumberOfPages();
+	if(num_page==0)
+		num_page=1;
 	for (int pageNum = 0; pageNum < num_page; pageNum++) {
 		rc = fileHandle.ReadPage(pageNum, buffer);
 		if (rc == -1)
@@ -75,12 +77,8 @@ void RM::load_catalog() {
 RC RM::updatecatalog() {
 	RC rc;
 	RID rid;
-	PF_FileHandle filehandle;
 	string tablename = "TableInfo";
 	void *buffer = malloc(4096);
-	rc = pf->OpenFile(tablename.c_str(), filehandle);
-	if (rc == -1)
-		return -1;
 	int tableid = 1;
 	memcpy(buffer, &tableid, 4);
 	int tablename_length = tablename.length();
@@ -101,13 +99,9 @@ RC RM::updatecatalog() {
 	memcpy((char *) buffer + 9 + tablename.length(), &tablename_length, 4);
 	memcpy((char *) buffer + 13 + tablename.length(), tablename.c_str(),
 			tablename.length() + 1);
-	rc = insertTuple("ColumnInfo", buffer, rid);
+	rc = insertTuple("TableInfo", buffer, rid);
 	free(buffer);
-	pf->CloseFile(filehandle);
 	tablename = "ColumnInfo";
-	rc = pf->OpenFile(tablename.c_str(), filehandle);
-	if (rc == -1)
-		return -1;
 	tableid = 1;
 	buffer = malloc(4096);
 	vector<Attribute> attrlist;
@@ -147,15 +141,15 @@ RC RM::updatecatalog() {
 	attribute.type = TypeInt;
 	attribute.length = (AttrLength) 4;
 	attrlist.push_back(attribute);
-	attribute.name = "Columnname";
+	attribute.name = "ColumnName";
 	attribute.type = TypeVarChar;
 	attribute.length = (AttrLength) 30;
 	attrlist.push_back(attribute);
-	attribute.name = "Columntype";
+	attribute.name = "ColumnType";
 	attribute.type = TypeVarChar;
 	attribute.length = (AttrLength) 4;
 	attrlist.push_back(attribute);
-	attribute.name = "Columnlength";
+	attribute.name = "ColumnLength";
 	attribute.type = TypeInt;
 	attribute.length = (AttrLength) 4;
 	attrlist.push_back(attribute);
@@ -175,12 +169,11 @@ RC RM::updatecatalog() {
 		memcpy((char *) buffer + offset, &y, sizeof(int));
 		offset = offset + sizeof(int);
 		int l = attrlist.at(j).length;
-		memcpy((char *) buffer + offset, &l, sizeof(unsigned));
-		offset = offset + sizeof(unsigned);
-		rc = insertTuple("Columns", buffer, rid);
+		memcpy((char *) buffer + offset, &l, sizeof(int));
+		offset = offset + sizeof(int);
+		rc = insertTuple("ColumnInfo", buffer, rid);
 	}
 	free(buffer);
-	pf->CloseFile(filehandle);
 	return rc;
 }
 
@@ -258,7 +251,7 @@ RC RM::readTuple(const string tableName, const RID &rid, void *data) {
 
 RC RM::createTable(const string tableName, const vector<Attribute> &attrs) {
 	//PF_FileHandle fileHandle;
-	cout<<endl<<tableName.c_str();
+	cout << endl << tableName.c_str();
 	RC rc = pf->CreateFile(tableName.c_str());
 	if (rc == -1)
 		return -1;
@@ -294,7 +287,7 @@ RC RM::createTable(const string tableName, const vector<Attribute> &attrs) {
 			int collength = attr->length;
 			item.collength = attr->length;
 			memcpy((char *) data + 13 + colname.length(), &collength, 4);
-			rc = insertTuple("column-catalog", data, rid);
+			rc = insertTuple("ColumnInfo", data, rid);
 			table_cache.push_back(item);
 			free(data);
 		}
@@ -303,7 +296,6 @@ RC RM::createTable(const string tableName, const vector<Attribute> &attrs) {
 }
 
 RC RM::insertTuple(const string tableName, const void *data, RID &rid) {
-	cout<<endl<<tableName.c_str();
 	RC rc;
 	unsigned int lpage_id;
 	PF_FileHandle filehandle;
@@ -311,7 +303,6 @@ RC RM::insertTuple(const string tableName, const void *data, RID &rid) {
 	unsigned int recordLen;
 	rc = getRecordLength(tableName, data, recordLen);
 	unsigned int num_slots, freespaceoffset;
-	cout<<endl<<tableName.c_str();
 	rc = pf->OpenFile(tableName.c_str(), filehandle);
 	if (rc == -1)
 		return -1;
@@ -378,7 +369,12 @@ RC RM::insertTuple(const string tableName, const void *data, RID &rid) {
 		}
 
 	}
-	rid.pageNum = filehandle.GetNumberOfPages() - 1;
+	if (filehandle.GetNumberOfPages() == 0)
+		rid.pageNum = 0;
+	else if (filehandle.GetNumberOfPages() > 0)
+		rid.pageNum = filehandle.GetNumberOfPages() - 1;
+	int temp = rid.pageNum;
+	cout << endl << temp << endl;
 	rid.slotNum = num_slots + 1;
 	rc = pf->CloseFile(filehandle);
 	free(buffer);

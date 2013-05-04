@@ -627,8 +627,8 @@ int main() {
 	//	remove("table-catalog");
 	remove("Tables");
 	remove("Columns");
-	remove("TableInfo");
-	remove("ColumnInfo");
+	/*remove("TableInfo");
+	remove("ColumnInfo");*/
 	remove("tbl_employee");
 	remove("tbl_employee3");
 	//	remove("column-catalog");
