@@ -98,6 +98,7 @@ public:
 	string gettableName(int);
 	int gettableID(string tableName);
 	RC getRecordLength(const string tableName,const void *data,unsigned int &length);
+	RC updatecatalog();
 
 	static RM* Instance();
 

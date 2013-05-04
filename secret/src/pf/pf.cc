@@ -141,6 +141,7 @@ void CacheRepPolicy::to_front(CacheBlock *block) {
 }
 
 RC PF_Manager::CreateFile(const char *fileName) {
+	cout<<endl<<fileName;
 	fstream file_str;
 	file_str.open(fileName, ios::in | ios::binary);
 	if (file_str.is_open()) {
@@ -170,6 +171,7 @@ RC PF_Manager::DestroyFile(const char *fileName) {
 }
 
 RC PF_Manager::OpenFile(const char *fileName, PF_FileHandle &fileHandle) {
+	cout<<endl<<fileName;
 	if (!fileHandle.file.is_open()) {
 		fileHandle.file.open(fileName, ios::in | ios::out | ios::binary);
 		if (fileHandle.file.is_open()) {
