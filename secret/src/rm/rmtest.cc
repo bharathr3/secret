@@ -7,8 +7,7 @@
 
 using namespace std;
 
-void rmTest()
-{
+void rmTest() {
 	remove("Tables");
 	remove("Columns");
 	remove("TableInfo");
@@ -17,10 +16,9 @@ void rmTest()
 	// write your own testing cases here
 }
 
-int main()
-{
-	cout<<"Begin"<<endl;
+int main() {
+	cout << "Begin" << endl;
 	rmTest();
 	//other tests go here
-	cout<<"End"<<endl;
+	cout << "End" << endl;
 }
