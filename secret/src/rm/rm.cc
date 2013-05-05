@@ -39,8 +39,6 @@ void RM::load_catalog() {
 	void *buffer = malloc(4096);
 	pf->OpenFile("ColumnInfo", fileHandle);
 	int num_page = fileHandle.GetNumberOfPages();
-	if(num_page==0)
-		num_page=1;
 	for (int pageNum = 0; pageNum < num_page; pageNum++) {
 		rc = fileHandle.ReadPage(pageNum, buffer);
 		if (rc == -1)
@@ -69,9 +67,9 @@ void RM::load_catalog() {
 			item.collength = collength;
 			table_cache.push_back(item);
 			free(data);
-			num_tables = table_count.size();
 		}
 	}
+	num_tables = table_count.size();
 }
 
 RC RM::updatecatalog() {
@@ -226,7 +224,7 @@ RC RM::readTuple(const string tableName, const RID &rid, void *data) {
 		return -1;
 	}
 	recordOffset = *(unsigned int *) ((char *) buffer + 4096 - 8 - 8 * slot_id);
-	recordLen = *(unsigned int *) ((char *) buffer + 4096 - 4 + 8 * slot_id);
+	recordLen = *(unsigned int *) ((char *) buffer + 4096 - 4 - 8 * slot_id);
 	if (recordLen == 5000) {
 		pf->CloseFile(filehandle);
 		return -1;
@@ -369,6 +367,10 @@ RC RM::insertTuple(const string tableName, const void *data, RID &rid) {
 		}
 
 	}
+	cout << "Freespace offset: "
+			<< *((unsigned int *) ((char *) buffer + 4096 - 4)) << endl;
+	cout << "Num Slots: " << *((unsigned int *) ((char *) buffer + 4096 - 8))
+			<< endl;
 	if (filehandle.GetNumberOfPages() == 0)
 		rid.pageNum = 0;
 	else if (filehandle.GetNumberOfPages() > 0)

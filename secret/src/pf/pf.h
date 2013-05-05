@@ -13,12 +13,12 @@ typedef unsigned PageNum;
 #define PF_PAGE_SIZE 4096
 
 class PF_FileHandle;
-class CacheRepPolicy;
+//class CacheRepPolicy;
 
 class PF_Manager {
 public:
 	static PF_Manager* Instance(int cacheNumPages); // Access to the _pf_manager instance
-	static CacheRepPolicy *_lru_cache;
+	//static CacheRepPolicy *_lru_cache;
 
 	RC CreateFile(const char *fileName); // Create a new file
 	RC DestroyFile(const char *fileName); // Destroy a file
@@ -36,7 +36,7 @@ private:
 class PF_FileHandle {
 public:
 	fstream file; // Added File for Filehandler
-	char *filename;
+	//char *filename;
 
 	PF_FileHandle(); // Default constructor
 	~PF_FileHandle(); // Destructor
@@ -56,7 +56,7 @@ public:
 	unsigned GetNumberOfPages(); // Get the number of pages in the file
 };
 
-struct block_info {
+/*struct block_info {
 	char* fname;
 	int pg_num;
 };
@@ -79,22 +79,22 @@ template<> struct less<block_info> {
 
 class CacheRepPolicy {
 private:
-	map<block_info, CacheBlock*> h_map;
 	CacheBlock *begin;
 	CacheBlock *end;
 	CacheBlock *list;
 public:
+	map<block_info, CacheBlock*> h_map;
 	multimap<char*, int> f_pages;
 	vector<CacheBlock*> empty_blocks;
 	CacheRepPolicy(size_t size);
 	~CacheRepPolicy();
 
 	void set(block_info key, void* data, int rw);
-	CacheBlock* get(block_info key);
+	int get(block_info key,CacheBlock& ret);
 
 private:
 	void remove_end(CacheBlock* block);
 	void to_front(CacheBlock* block);
-};
+};*/
 
 #endif

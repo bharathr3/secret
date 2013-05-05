@@ -7,7 +7,6 @@
 #include <cassert>
 
 #include "rm.h"
-
 RM *rm = RM::Instance();
 using namespace std;
 const int success = 0;
@@ -581,6 +580,7 @@ void secA_41(const string tablename, const int name_length, const string name,
 	free(data_returned);
 	return;
 }
+
 void Tests() {
 	// GetAttributes
 	secA_0("tbl_employee");
@@ -613,6 +613,7 @@ void Tests() {
 	return;
 }
 
+
 void rmTest() {
 	remove("Tables");
 	remove("Columns");
@@ -622,24 +623,18 @@ void rmTest() {
 	// write your own testing cases here
 }
 
+
 int main() {
 	cout << endl << "Test Basic Functions..." << endl;
-	//	remove("table-catalog");
-	remove("Tables");
-	remove("Columns");
-	/*remove("TableInfo");
-	remove("ColumnInfo");*/
 	remove("tbl_employee");
-	remove("tbl_employee3");
-	//	remove("column-catalog");
 	// Create Table
 	createTable("tbl_employee");
 
 	Tests();
 
-	return 0;/*
+	return 0;
 	 cout << "Begin" << endl;
 	 rmTest();
 	 //other tests go here
-	 cout << "End" << endl;*/
+	 cout << "End" << endl;
 }
