@@ -64,7 +64,7 @@ public:
 	string tablename,conditionattribute;
 	AttrType attributetype;
 	vector<string> attributenames;
-	const void* value;
+	void* value;
 	CompOp compop;
 	PF_FileHandle filehandle;
 	RID currentrid;

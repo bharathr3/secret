@@ -614,19 +614,20 @@ void Tests() {
 }
 
 
-void rmTest() {
+/*void rmTest() {
 	remove("Tables");
 	remove("Columns");
 	remove("TableInfo");
 	remove("ColumnInfo");
 	RM *rm = RM::Instance();
 	// write your own testing cases here
-}
+}*/
 
 
 int main() {
 	cout << endl << "Test Basic Functions..." << endl;
-	remove("tbl_employee");
+	int rr=rm->deleteTable("tbl_employee");
+	cout<<rr<<endl;
 	// Create Table
 	createTable("tbl_employee");
 
@@ -634,7 +635,7 @@ int main() {
 
 	return 0;
 	 cout << "Begin" << endl;
-	 rmTest();
+	 //rmTest();
 	 //other tests go here
 	 cout << "End" << endl;
 }

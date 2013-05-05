@@ -49,26 +49,30 @@ void RM::load_catalog() {
 			rid.pageNum = pageNum;
 			rid.slotNum = i;
 			void *data = malloc(4096);
-			readTuple("ColumnInfo", rid, data);
-			int tableid = (*(unsigned int*) ((char*) data)); //first 4 bytes table-id
-			table_count.insert(std::pair<int, int>(tableid, 1));
-			int colname_length = (*(unsigned int*) ((char*) data + 4)); //next 4 bytes length of column-name
-			char colname[4096];
-			memcpy(colname, (char*) data + 8, colname_length); //next colname.length bytes for column-name
-			colname[colname_length] = '\0'; //String end
-			AttrType coltype =
-					(*(AttrType*) ((char*) data + 9 + colname_length));
-			int collength = (*(unsigned int*) ((char*) data + 13
-					+ colname_length));
+			rc = readTuple("ColumnInfo", rid, data);
+			if (rc != -1) {
+				int tableid = (*(unsigned int*) ((char*) data)); //first 4 bytes table-id
 
-			item.tablename = gettableName(tableid);
-			item.colname = colname;
-			item.coltype = coltype;
-			item.collength = collength;
-			table_cache.push_back(item);
+				table_count.insert(std::pair<int, int>(tableid, 1));
+				int colname_length = (*(unsigned int*) ((char*) data + 4)); //next 4 bytes length of column-name
+				char colname[4096];
+				memcpy(colname, (char*) data + 8, colname_length); //next colname.length bytes for column-name
+				colname[colname_length] = '\0'; //String end
+				AttrType coltype = (*(AttrType*) ((char*) data + 9
+						+ colname_length));
+				int collength = (*(unsigned int*) ((char*) data + 13
+						+ colname_length));
+
+				item.tablename = gettableName(tableid);
+				item.colname = colname;
+				item.coltype = coltype;
+				item.collength = collength;
+				table_cache.push_back(item);
+			}
 			free(data);
 		}
 	}
+	free(buffer);
 	num_tables = table_count.size();
 }
 
@@ -118,21 +122,27 @@ RC RM::updatecatalog() {
 	attrlist.push_back(attribute);
 	int offset;
 	for (int i = 0; i < (int) attrlist.size(); i++) {
+		table_cache_item item;
 		offset = 0;
 		memcpy((char *) buffer + offset, &tableid, sizeof(int));
 		offset = offset + sizeof(int);
 		int a = (attrlist.at(i).name).length();
 		memcpy((char *) buffer + offset, &a, sizeof(int));
 		offset = offset + sizeof(int);
+		item.colname = attrlist.at(i).name;
 		memcpy((char *) buffer + offset, attrlist.at(i).name.c_str(), a);
 		offset = offset + a;
 		int y = attrlist.at(i).type;
+		item.coltype = attrlist.at(i).type;
 		memcpy((char *) buffer + offset, &y, sizeof(int));
 		offset = offset + sizeof(int);
 		int l = attrlist.at(i).length;
+		item.collength = l;
+		item.tablename = "TableInfo";
 		memcpy((char *) buffer + offset, &l, sizeof(int));
 		offset = offset + sizeof(int);
 		rc = insertTuple("ColumnInfo", buffer, rid);
+		table_cache.push_back(item);
 	}
 	attrlist.clear();
 	attribute.name = "Tableid";
@@ -153,23 +163,29 @@ RC RM::updatecatalog() {
 	attrlist.push_back(attribute);
 	free(buffer);
 	buffer = malloc(4096);
-	tableid = 2;
+	int tableid2 = 2;
 	for (int j = 0; j < (int) attrlist.size(); j++) {
+		table_cache_item item;
 		offset = 0;
-		memcpy((char *) buffer + offset, &tableid, sizeof(int));
+		memcpy((char *) buffer + offset, &tableid2, sizeof(int));
 		offset = offset + sizeof(int);
 		int a = (attrlist.at(j).name).length();
 		memcpy((char *) buffer + offset, &a, sizeof(int));
 		offset = offset + sizeof(int);
+		item.colname = attrlist.at(j).name;
 		memcpy((char *) buffer + offset, attrlist.at(j).name.c_str(), a);
 		offset = offset + a;
 		int y = attrlist.at(j).type;
+		item.coltype = attrlist.at(j).type;
 		memcpy((char *) buffer + offset, &y, sizeof(int));
 		offset = offset + sizeof(int);
 		int l = attrlist.at(j).length;
+		item.collength = attrlist.at(j).length;
+		item.tablename = "ColumnInfo";
 		memcpy((char *) buffer + offset, &l, sizeof(int));
 		offset = offset + sizeof(int);
 		rc = insertTuple("ColumnInfo", buffer, rid);
+		table_cache.push_back(item);
 	}
 	free(buffer);
 	return rc;
@@ -190,16 +206,19 @@ string RM::gettableName(int tableid) {
 			rid.pageNum = pageNum;
 			rid.slotNum = i;
 			void *data = malloc(4096);
-			readTuple("TableInfo", rid, data);
-			int tid = (*(unsigned int*) ((char*) data)); //first 4 bytes table-id
-			int tablelength = (*(unsigned int*) ((char*) data + 4)); //next 4 bytes length of tablename
-			char tablename[4096];
-			memcpy(tablename, (char *) data + 8, tablelength); //next tablename.length bytes for tablename
+			rc = readTuple("TableInfo", rid, data);
+			if (rc != -1) {
+				int tid = (*(unsigned int*) ((char*) data)); //first 4 bytes table-id
+				int tablelength = (*(unsigned int*) ((char*) data + 4)); //next 4 bytes length of tablename
+				char tablename[4096];
+				memcpy(tablename, (char *) data + 8, tablelength); //next tablename.length bytes for tablename
+				if (tableid == tid)
+					return tablename;
+			}
 			free(data);
-			if (tableid == tid)
-				return tablename;
 		}
 	}
+	free(buffer);
 	return 0;
 }
 
@@ -409,7 +428,7 @@ RC RM::getRecordLength(const string tableName, const void *data,
 					buffer = malloc(4);
 					memcpy(buffer, (char *) data + length, 4);
 					unsigned int name_len = *(unsigned int*) buffer;
-					length += name_len + 4; //TODO could be added new attribute causing error
+					length += name_len + 4;
 					free(buffer);
 				}
 			}
@@ -419,29 +438,41 @@ RC RM::getRecordLength(const string tableName, const void *data,
 }
 
 RC RM::deleteTable(const string tableName) {
-	RM_ScanIterator iter;
+	RM_ScanIterator iter, iter1;
 	RC rc;
 	RID rid;
 	void *data = malloc(4096);
 	int table_id = gettableID(tableName);
-	string attr = "tableid";
+	string attr = "Tableid";
 	vector<string> attributes;
 	attributes.push_back(attr);
-	rc = scan(tableName, "", NO_OP, NULL, attributes, iter);
+	rc = scan("ColumnInfo", "", NO_OP, NULL, attributes, iter);
 	if (rc == -1)
 		return -1;
 	while (iter.getNextTuple(rid, data) != RM_EOF) {
+		cout << *(int *) data << endl;
 		if (table_id == *(int *) data)
-			deleteTuple(tableName, rid);
+			deleteTuple("ColumnInfo", rid);
 	}
-	iter.close();
 	free(data);
-	for (vector<table_cache_item>::iterator table_info = table_cache.begin();
-			table_info != table_cache.end(); ++table_info) {
-		if (tableName == table_info->tablename)
-			table_info = table_cache.erase(table_info);
-		else
-			++table_info;
+	iter.close();
+	data = malloc(4096);
+	rc = scan("TableInfo", "", NO_OP, NULL, attributes, iter1);
+	if (rc == -1)
+		return -1;
+	while (iter1.getNextTuple(rid, data) != RM_EOF) {
+		if (table_id == *(int *) data)
+			deleteTuple("TableInfo", rid);
+	}
+	iter1.close();
+	free(data);
+	vector<table_cache_item>::size_type i = 0;
+	while (i < table_cache.size()) {
+		if (strcmp(tableName.c_str(), table_cache[i].tablename.c_str()) == 0) {
+			table_cache.erase(table_cache.begin() + i);
+		} else {
+			++i;
+		}
 	}
 	rc = pf->DestroyFile(tableName.c_str());
 	return rc;
@@ -505,6 +536,7 @@ RC RM::getAttributes(const string tableName, vector<Attribute> &attrs) {
 	for (vector<table_cache_item>::const_iterator table_info =
 			table_cache.begin(); table_info != table_cache.end();
 			++table_info) {
+		cout << tableName << endl << table_info->tablename << endl;
 		if (tableName == table_info->tablename) {
 			attr.name = table_info->colname;
 			attr.type = table_info->coltype;
@@ -666,15 +698,19 @@ int RM::gettableID(string tableName) {
 			rid.pageNum = i;
 			rid.slotNum = j;
 			void *data = malloc(4096);
-			readTuple("TableInfo", rid, data);
-			tableid = (*(unsigned int*) ((char*) data));
-			tablelength = (*(unsigned int*) ((char*) data + 4));
-			memcpy(tablename, (char *) data + 8, tablelength);
-			free(data);
-			if (strcmp(tablename, tableName.c_str()) == 0)
-				return tableid;
+			rc = readTuple("TableInfo", rid, data);
+			if (rc != -1) {
+				tableid = (*(unsigned int*) ((char*) data));
+
+				tablelength = (*(unsigned int*) ((char*) data + 4));
+				memcpy(tablename, (char *) data + 8, tablelength);
+				free(data);
+				if (strcmp(tablename, tableName.c_str()) == 0)
+					return tableid;
+			}
 		}
 	}
+	free(buffer);
 	return 0;
 }
 
@@ -714,37 +750,51 @@ RC RM::scan(const string tableName, const string conditionAttribute,
 		const vector<string> &attributeNames,
 		RM_ScanIterator &rm_ScanIterator) {
 	RC rc;
-	PF_FileHandle filehandle;
-	rc = pf->OpenFile(tableName.c_str(), filehandle);
+	//PF_FileHandle filehandle;
+	rc = pf->OpenFile(tableName.c_str(), rm_ScanIterator.filehandle);
 	if (rc == -1)
 		return -1;
 	rm_ScanIterator.tablename = tableName;
+	cout << rm_ScanIterator.tablename << endl;
 	rm_ScanIterator.attributenames = attributeNames;
-	rm_ScanIterator.value = value;
+	for (unsigned i = 0; i < rm_ScanIterator.attributenames.size(); i++)
+		cout << rm_ScanIterator.attributenames[i] << endl;
+	rm_ScanIterator.value = (void*) value;
 	rm_ScanIterator.compop = compOp;
+	cout << rm_ScanIterator.compop << endl;
 	rm_ScanIterator.conditionattribute = conditionAttribute;
-	rm_ScanIterator.filehandle = filehandle;
+	cout << rm_ScanIterator.conditionattribute << endl;
+	//rm_ScanIterator.filehandle = filehandle;
 	rm_ScanIterator.currentrid.pageNum = 0;
 	rm_ScanIterator.currentrid.slotNum = 1;
 	vector<Attribute> attributes;
 	rc = getAttributes(tableName, attributes);
 
+	unsigned count = 0;
 	for (vector<Attribute>::const_iterator attr = attributes.begin();
 			attr != attributes.end(); ++attr) {
-		if (attr->name == conditionAttribute)
+		cout << attr->name << endl;
+		cout << conditionAttribute << endl;
+		if (strcmp(attr->name.c_str(), conditionAttribute.c_str()) == 0) {
 			rm_ScanIterator.attributetype = attr->type;
+			cout << rm_ScanIterator.attributetype << endl;
+		} else
+			count++;
+	}
+	if (count == attributes.size()) {
+		rm_ScanIterator.attributetype = (AttrType) 5;
+		cout << rm_ScanIterator.attributetype << endl;
 	}
 	return rc;
 }
 
-//TODO DropAttribute
 RC RM::dropAttribute(const string tableName, const string attributeName) {
 	RM_ScanIterator iter;
 	RC rc;
 	RID rid;
 	void *data = malloc(4096);
 	int table_id = gettableID(tableName);
-	string attr = "tableid";
+	string attr = "Tableid";
 	vector<string> attributes;
 	attributes.push_back("Tableid");
 	attributes.push_back(attr);
@@ -759,13 +809,13 @@ RC RM::dropAttribute(const string tableName, const string attributeName) {
 	}
 	iter.close();
 	free(data);
-	for (vector<table_cache_item>::iterator table_info = table_cache.begin();
-			table_info != table_cache.end(); ++table_info) {
-		if ((tableName == table_info->tablename)
-				&& (attributeName == table_info->colname))
-			table_info = table_cache.erase(table_info);
-		else
-			++table_info;
+	vector<table_cache_item>::size_type i = 0;
+	while (i < table_cache.size()) {
+		if (strcmp(tableName.c_str(), table_cache[i].tablename.c_str()) == 0) {
+			table_cache.erase(table_cache.begin() + i);
+		} else {
+			++i;
+		}
 	}
 	return 0;
 }
