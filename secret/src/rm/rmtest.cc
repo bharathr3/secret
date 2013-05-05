@@ -96,7 +96,7 @@ void createTable(const string tablename) {
 	attr.length = (AttrLength) 4;
 	attrs.push_back(attr);
 
-	cout<<endl<<tablename;
+	cout << endl << tablename;
 
 	RC rc = rm->createTable(tablename, attrs);
 	assert(rc == success);
@@ -230,7 +230,7 @@ void secA_3(const string tablename, const int name_length, const string name,
 	cout << "Original RID slot = " << rid.slotNum << endl;
 
 	// Test Update Tuple
-	prepareTuple(6, "Newman", age, height, 100, tuple_updated,
+	prepareTuple(6, "Thomas", age, height, 100, tuple_updated,
 			&tuple_size_updated);
 	printTuple(tuple_updated, tuple_size_updated);
 	rc = rm->updateTuple(tablename, tuple_updated, rid);
@@ -613,29 +613,13 @@ void Tests() {
 	return;
 }
 
-
-/*void rmTest() {
-	remove("Tables");
-	remove("Columns");
-	remove("TableInfo");
-	remove("ColumnInfo");
-	RM *rm = RM::Instance();
-	// write your own testing cases here
-}*/
-
-
 int main() {
 	cout << endl << "Test Basic Functions..." << endl;
-	int rr=rm->deleteTable("tbl_employee");
-	cout<<rr<<endl;
+	cout << "Begin" << endl;
+	rm->deleteTable("tbl_employee");
 	// Create Table
 	createTable("tbl_employee");
-
 	Tests();
-
+	cout << "End" << endl;
 	return 0;
-	 cout << "Begin" << endl;
-	 //rmTest();
-	 //other tests go here
-	 cout << "End" << endl;
 }

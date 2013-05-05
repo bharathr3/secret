@@ -61,7 +61,7 @@ typedef enum {
 
 class RM_ScanIterator {
 public:
-	string tablename,conditionattribute;
+	string tablename, conditionattribute;
 	AttrType attributetype;
 	vector<string> attributenames;
 	void* value;
@@ -90,14 +90,11 @@ public:
 	int num_tables;
 	vector<table_cache_item> table_cache;
 
-	/*
-	 RC Destroy_PF_Manager();
-	 RC print_voidp(void *p,string type);*/
-
 	void load_catalog();
 	string gettableName(int);
 	int gettableID(string tableName);
-	RC getRecordLength(const string tableName,const void *data,unsigned int &length);
+	RC getRecordLength(const string tableName, const void *data,
+			unsigned int &length);
 	RC updatecatalog();
 
 	static RM* Instance();

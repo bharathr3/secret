@@ -41,14 +41,13 @@ public:
 	PF_FileHandle(); // Default constructor
 	~PF_FileHandle(); // Destructor
 
-	PF_FileHandle& operator=(const PF_FileHandle &pf)
-	       {
-	               (this->file).copyfmt(pf.file);
-	               (this->file).clear(pf.file.rdstate());
-	               (this->file).basic_ios<char>::rdbuf(pf.file.rdbuf());
+	PF_FileHandle& operator=(const PF_FileHandle &pf) {
+		(this->file).copyfmt(pf.file);
+		(this->file).clear(pf.file.rdstate());
+		(this->file).basic_ios<char>::rdbuf(pf.file.rdbuf());
 
-	               return (*this);
-	       }
+		return (*this);
+	}
 
 	RC ReadPage(PageNum pageNum, void *data); // Get a specific page
 	RC WritePage(PageNum pageNum, const void *data); // Write a specific page
@@ -57,44 +56,44 @@ public:
 };
 
 /*struct block_info {
-	char* fname;
-	int pg_num;
-};
+ char* fname;
+ int pg_num;
+ };
 
-struct CacheBlock {
-	block_info block;
-	void* data;
-	bool d_bit;
-	CacheBlock* prev;
-	CacheBlock* next;
-};
+ struct CacheBlock {
+ block_info block;
+ void* data;
+ bool d_bit;
+ CacheBlock* prev;
+ CacheBlock* next;
+ };
 
-namespace std {
-template<> struct less<block_info> {
-	bool operator()(const block_info& lhs, const block_info& rhs) {
-		return lhs.pg_num < rhs.pg_num;
-	}
-};
-}
+ namespace std {
+ template<> struct less<block_info> {
+ bool operator()(const block_info& lhs, const block_info& rhs) {
+ return lhs.pg_num < rhs.pg_num;
+ }
+ };
+ }
 
-class CacheRepPolicy {
-private:
-	CacheBlock *begin;
-	CacheBlock *end;
-	CacheBlock *list;
-public:
-	map<block_info, CacheBlock*> h_map;
-	multimap<char*, int> f_pages;
-	vector<CacheBlock*> empty_blocks;
-	CacheRepPolicy(size_t size);
-	~CacheRepPolicy();
+ class CacheRepPolicy {
+ private:
+ CacheBlock *begin;
+ CacheBlock *end;
+ CacheBlock *list;
+ public:
+ map<block_info, CacheBlock*> h_map;
+ multimap<char*, int> f_pages;
+ vector<CacheBlock*> empty_blocks;
+ CacheRepPolicy(size_t size);
+ ~CacheRepPolicy();
 
-	void set(block_info key, void* data, int rw);
-	int get(block_info key,CacheBlock& ret);
+ void set(block_info key, void* data, int rw);
+ int get(block_info key,CacheBlock& ret);
 
-private:
-	void remove_end(CacheBlock* block);
-	void to_front(CacheBlock* block);
-};*/
+ private:
+ void remove_end(CacheBlock* block);
+ void to_front(CacheBlock* block);
+ };*/
 
 #endif

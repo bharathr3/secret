@@ -268,7 +268,6 @@ RC RM::readTuple(const string tableName, const RID &rid, void *data) {
 
 RC RM::createTable(const string tableName, const vector<Attribute> &attrs) {
 	//PF_FileHandle fileHandle;
-	cout << endl << tableName.c_str();
 	RC rc = pf->CreateFile(tableName.c_str());
 	if (rc == -1)
 		return -1;
@@ -386,16 +385,11 @@ RC RM::insertTuple(const string tableName, const void *data, RID &rid) {
 		}
 
 	}
-	cout << "Freespace offset: "
-			<< *((unsigned int *) ((char *) buffer + 4096 - 4)) << endl;
-	cout << "Num Slots: " << *((unsigned int *) ((char *) buffer + 4096 - 8))
-			<< endl;
 	if (filehandle.GetNumberOfPages() == 0)
 		rid.pageNum = 0;
 	else if (filehandle.GetNumberOfPages() > 0)
 		rid.pageNum = filehandle.GetNumberOfPages() - 1;
 	int temp = rid.pageNum;
-	cout << endl << temp << endl;
 	rid.slotNum = num_slots + 1;
 	rc = pf->CloseFile(filehandle);
 	free(buffer);
@@ -450,7 +444,6 @@ RC RM::deleteTable(const string tableName) {
 	if (rc == -1)
 		return -1;
 	while (iter.getNextTuple(rid, data) != RM_EOF) {
-		cout << *(int *) data << endl;
 		if (table_id == *(int *) data)
 			deleteTuple("ColumnInfo", rid);
 	}
@@ -536,7 +529,6 @@ RC RM::getAttributes(const string tableName, vector<Attribute> &attrs) {
 	for (vector<table_cache_item>::const_iterator table_info =
 			table_cache.begin(); table_info != table_cache.end();
 			++table_info) {
-		cout << tableName << endl << table_info->tablename << endl;
 		if (tableName == table_info->tablename) {
 			attr.name = table_info->colname;
 			attr.type = table_info->coltype;
@@ -736,8 +728,6 @@ RC RM::addAttribute(const string tableName, const Attribute attr) {
 	int column_length = attr.length;
 	table_info.collength = attr.length;
 	memcpy((char *) buffer + 13 + column_name.length(), &column_length, 4);
-	cout << table_id << "--" << name_length << "--" << column_name << "--"
-			<< column_type << "--" << column_length;
 	RID rid_c;
 	RC rc = insertTuple("ColumnInfo", buffer, rid_c);
 	table_cache.push_back(table_info);
@@ -755,16 +745,10 @@ RC RM::scan(const string tableName, const string conditionAttribute,
 	if (rc == -1)
 		return -1;
 	rm_ScanIterator.tablename = tableName;
-	cout << rm_ScanIterator.tablename << endl;
 	rm_ScanIterator.attributenames = attributeNames;
-	for (unsigned i = 0; i < rm_ScanIterator.attributenames.size(); i++)
-		cout << rm_ScanIterator.attributenames[i] << endl;
 	rm_ScanIterator.value = (void*) value;
 	rm_ScanIterator.compop = compOp;
-	cout << rm_ScanIterator.compop << endl;
 	rm_ScanIterator.conditionattribute = conditionAttribute;
-	cout << rm_ScanIterator.conditionattribute << endl;
-	//rm_ScanIterator.filehandle = filehandle;
 	rm_ScanIterator.currentrid.pageNum = 0;
 	rm_ScanIterator.currentrid.slotNum = 1;
 	vector<Attribute> attributes;
@@ -773,17 +757,13 @@ RC RM::scan(const string tableName, const string conditionAttribute,
 	unsigned count = 0;
 	for (vector<Attribute>::const_iterator attr = attributes.begin();
 			attr != attributes.end(); ++attr) {
-		cout << attr->name << endl;
-		cout << conditionAttribute << endl;
 		if (strcmp(attr->name.c_str(), conditionAttribute.c_str()) == 0) {
 			rm_ScanIterator.attributetype = attr->type;
-			cout << rm_ScanIterator.attributetype << endl;
 		} else
 			count++;
 	}
 	if (count == attributes.size()) {
 		rm_ScanIterator.attributetype = (AttrType) 5;
-		cout << rm_ScanIterator.attributetype << endl;
 	}
 	return rc;
 }
@@ -980,100 +960,50 @@ RC RM_ScanIterator::getNextTuple(RID &rid, void *data) {
 	return rc;
 }
 
-//TODO reorganizepage
-/*RC RM::reorganizePage(const string tableName, const unsigned pageNumber) {
- PF_FileHandle fHandle;
- unsigned int freespaceoffset, num_slots;
-
- unsigned int recordlenTo, recordoffsetTo, recordlenFrom, recordoffsetFrom;
- unsigned int lastmoved = 1;
- unsigned int lastmoved_offset = 0;
-
- void * buffer = malloc(4096);
- RC rc;
-
- rc = pf->OpenFile(tableName.c_str(), fHandle);
- if (rc == -1)
- return -1;
-
- rc = fHandle.ReadPage(pageNumber, buffer);
- if (rc == -1) {
- pf->CloseFile(fHandle);
- return -1;
- }
- freespaceoffset = *((unsigned int *) ((char *) buffer + 4096 - 4));
- num_slots = *((unsigned int *) ((char *) buffer + 4096 - 8));
-
- for (unsigned int i = 1; i <= num_slots; i++) {
- recordlenTo = *(unsigned int *) ((char *) buffer + 4096 - (4 + 8 * i));
- recordoffsetTo =
- *(unsigned int *) ((char *) buffer + 4096 - (8 + 8 * i));
- if ((recordlenTo == 5000) && (recordoffsetTo != 4097))
- {
- if (lastmoved_offset > recordoffsetTo) {
- if (lastmoved_offset > recordoffsetTo + recordlenTo)
- *(unsigned int *) ((char *) buffer + 4096 - (8 + 8 * i)) =
- 4097;
- else
- recordoffsetTo = lastmoved_offset;
- } else {
- //find next valid slot
- unsigned int start = lastmoved > (i + 1) ? lastmoved : i;
- start++; //start searching from next slot
- for (unsigned int j = start; j <= nSlots; j++) {
- recordoffsetFrom = *(unsigned int *) ((char *) buffer + 4096
- - (8 + 8 * j));
- recordlenFrom = *(unsigned int *) ((char *) buffer + 4096
- - (4 + 8 * j));
- if (recordlenFrom != 0) {
- memcpy((char *) buffer + recordoffsetTo,
- (char *) buffer + recordoffsetFrom,
- recordlenFrom);
- *(unsigned int *) ((char *) buffer + 4096 - (8 + 8 * j)) =
- recordoffsetTo; //update new offset
-
- *(unsigned int *) ((char *) buffer + 4096 - (8 + 8 * i)) =
- 4097; //mark as collected
-
- lastmoved = j;
- lastmoved_offset = recordoffsetTo + recordlenFrom + 1; //points to next free byte/slot
- break; //moved 1 block exit innerloop
- }
- }
- }
- } else if ((*(unsigned int *) ((char *) buffer + recordoffsetTo) == 1)
- && (recordlenTo != 9)) //this is a non collected tombstone.
- {
- recordoffsetTo += 9; //tombstone needs only 9 bytes
- //find next valid slot
- unsigned int start = lastmoved > (i + 1) ? lastmoved : i;
- start++; //start searching from next slot
- for (unsigned int j = start; j <= nSlots; j++) {
- recordoffsetFrom = *(unsigned int *) ((char *) buffer + 4096
- - (8 + 8 * j));
- recordlenFrom = *(unsigned int *) ((char *) buffer + 4096
- - (4 + 8 * j));
- if (recordlenFrom != 0) {
- memcpy((char *) buffer + recordoffsetTo,
- (char *) buffer + recordoffsetFrom, recordlenFrom);
- *(unsigned int *) ((char *) buffer + 4096 - (8 + 8 * j)) =
- recordoffsetTo; //update new offset
-
- *(unsigned int *) ((char *) buffer + 4096 - (4 + 8 * i)) =
- 9; //mark tombstone as collected
-
- lastmoved = j;
- break; //moved 1 block exit innerloop
- }
- }
-
- }
- }
- //this implementation lets holes in the slots of footer of page.
- retCode = pf->CloseFile(fHandle);
- free(buffer);
- return retCode;
- }*/
+RC RM::reorganizePage(const string tableName, const unsigned pageNumber) {
+	PF_FileHandle filehandle;
+	RC rc;
+	int recordOffset, recordLen, nbuffer_offset = 0, nslot_id = 1;
+	void *buffer = malloc(4096);
+	void *nbuffer = malloc(4096);
+	pf->OpenFile(tableName.c_str(), filehandle);
+	rc = filehandle.ReadPage(pageNumber, buffer);
+	if (rc != -1) {
+		int num_slots = *((unsigned int *) ((char *) buffer + 4096 - 8));
+		for (int j = 1; j <= num_slots; j++) {
+			recordOffset =
+					*(unsigned int *) ((char *) buffer + 4096 - 8 - 8 * j);
+			recordLen = *(unsigned int *) ((char *) buffer + 4096 - 4 - 8 * j);
+			if (recordLen != 5000) {
+				if (*(char *) ((char *) buffer + recordOffset) == 1) {
+					memcpy((char *) nbuffer + nbuffer_offset,
+							(char *) buffer + recordOffset, 9);
+					*(unsigned int *) ((char *) nbuffer + 4096 - 8
+							- 8 * nslot_id) = nbuffer_offset;
+					*(unsigned int *) ((char *) nbuffer + 4096 - 4
+							- 8 * nslot_id) = 9;
+					nbuffer_offset += 9;
+					nslot_id++;
+				} else {
+					memcpy((char *) nbuffer + nbuffer_offset,
+							(char *) buffer + recordOffset, recordLen);
+					*(unsigned int *) ((char *) nbuffer + 4096 - 8
+							- 8 * nslot_id) = nbuffer_offset;
+					*(unsigned int *) ((char *) nbuffer + 4096 - 4
+							- 8 * nslot_id) = recordLen;
+					nbuffer_offset += recordLen;
+					nslot_id++;
+				}
+			}
+		}
+		*((unsigned int *) ((char *) nbuffer + 4096 - 4)) = nbuffer_offset;
+		*((unsigned int *) ((char *) nbuffer + 4096 - 8)) = nslot_id - 1;
+		rc = filehandle.WritePage(pageNumber, nbuffer);
+	}
+	free(buffer);
+	free(nbuffer);
+	return 0;
+}
 
 RC RM::reorganizeTable(const string tableName) {
 	RC rc;
