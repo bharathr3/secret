@@ -389,7 +389,6 @@ RC RM::insertTuple(const string tableName, const void *data, RID &rid) {
 		rid.pageNum = 0;
 	else if (filehandle.GetNumberOfPages() > 0)
 		rid.pageNum = filehandle.GetNumberOfPages() - 1;
-	int temp = rid.pageNum;
 	rid.slotNum = num_slots + 1;
 	rc = pf->CloseFile(filehandle);
 	free(buffer);

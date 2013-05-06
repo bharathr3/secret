@@ -7,16 +7,24 @@
 #include <iostream>
 using namespace std;
 
+struct CacheBlock {
+	string fname;
+	int pg_num;
+	void* data;
+	bool d_bit;
+};
+
 typedef int RC;
 typedef unsigned PageNum;
 
 #define PF_PAGE_SIZE 4096
 
 class PF_FileHandle;
-//class CacheRepPolicy;
+class Cache_Policy;
 
 class PF_Manager {
 public:
+	static Cache_Policy *_fifo_cache;
 	static PF_Manager* Instance(int cacheNumPages); // Access to the _pf_manager instance
 	//static CacheRepPolicy *_lru_cache;
 
@@ -36,7 +44,7 @@ private:
 class PF_FileHandle {
 public:
 	fstream file; // Added File for Filehandler
-	//char *filename;
+	string filename;
 
 	PF_FileHandle(); // Default constructor
 	~PF_FileHandle(); // Destructor
@@ -55,45 +63,14 @@ public:
 	unsigned GetNumberOfPages(); // Get the number of pages in the file
 };
 
-/*struct block_info {
- char* fname;
- int pg_num;
- };
+class Cache_Policy {
+public:
+	int cache_counter;
+	int num_blocks;
+	vector<CacheBlock*> _fifo_cache_list;
 
- struct CacheBlock {
- block_info block;
- void* data;
- bool d_bit;
- CacheBlock* prev;
- CacheBlock* next;
- };
-
- namespace std {
- template<> struct less<block_info> {
- bool operator()(const block_info& lhs, const block_info& rhs) {
- return lhs.pg_num < rhs.pg_num;
- }
- };
- }
-
- class CacheRepPolicy {
- private:
- CacheBlock *begin;
- CacheBlock *end;
- CacheBlock *list;
- public:
- map<block_info, CacheBlock*> h_map;
- multimap<char*, int> f_pages;
- vector<CacheBlock*> empty_blocks;
- CacheRepPolicy(size_t size);
- ~CacheRepPolicy();
-
- void set(block_info key, void* data, int rw);
- int get(block_info key,CacheBlock& ret);
-
- private:
- void remove_end(CacheBlock* block);
- void to_front(CacheBlock* block);
- };*/
+	Cache_Policy(int numpages);
+	~Cache_Policy();
+};
 
 #endif

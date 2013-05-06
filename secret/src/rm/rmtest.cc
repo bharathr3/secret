@@ -476,9 +476,11 @@ void secA_31(const string tablename, const int name_length, const string name,
 
 	for (int i = 1000; i < 2000; i++) {
 		rc = rm->readTuple(tablename, rids[i], data_returned);
-		cout << rids[i].pageNum << rids[i].slotNum << "\n";
+		cout << rids[i].pageNum<<" "<< rids[i].slotNum << "\n";
 		assert(rc == success);
 		if (memcmp(data_returned, tuple_updated, tuple_size_updated) != 0) {
+			printTuple(data_returned, tuple_size_updated);
+			printTuple(tuple_updated, tuple_size_updated);
 			cout << "****Read updated tuples failed for****" << i << endl
 					<< endl;
 			return;
@@ -608,6 +610,8 @@ void Tests() {
 	vector<RID> rids;
 
 	secA_31("tbl_employee", 6, "Thomas", 28, 187.3, 4000);
+
+	secA_41("tbl_employee", 7, "Thomass", 29, 197.3, 5000);
 	// secA_32("tbl_employee",);
 
 	return;
