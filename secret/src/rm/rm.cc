@@ -58,9 +58,9 @@ void RM::load_catalog() {
 				char colname[4096];
 				memcpy(colname, (char*) data + 8, colname_length); //next colname.length bytes for column-name
 				colname[colname_length] = '\0'; //String end
-				AttrType coltype = (*(AttrType*) ((char*) data + 9
+				AttrType coltype = (*(AttrType*) ((char*) data + 8
 						+ colname_length));
-				int collength = (*(unsigned int*) ((char*) data + 13
+				int collength = (*(unsigned int*) ((char*) data + 12
 						+ colname_length));
 
 				item.tablename = gettableName(tableid);
@@ -466,6 +466,9 @@ RC RM::deleteTable(const string tableName) {
 			++i;
 		}
 	}
+	for (vector<table_cache_item>::const_iterator item = table_cache.begin();
+			item != table_cache.end(); ++item) {
+	}
 	rc = pf->DestroyFile(tableName.c_str());
 	return rc;
 }
@@ -501,7 +504,7 @@ RC RM::deleteTuple(const string tableName, const RID &rid) {
 
 	recordOffset = *(unsigned int *) ((char *) buffer + 4096 - 8 - 8 * slot_id);
 	recordLen = *(unsigned int *) ((char *) buffer + 4096 - 4 - 8 * slot_id);
-	recordLen--;
+	//recordLen--;
 	if (*(char *) ((char *) buffer + recordOffset) == 1) {
 		unsigned int tslot_id, tpage_id;
 		*(char *) ((char *) buffer + recordOffset) = 0;
@@ -518,7 +521,14 @@ RC RM::deleteTuple(const string tableName, const RID &rid) {
 
 	*(unsigned int *) ((char *) buffer + 4096 - 4 - 8 * slot_id) = 5000;
 	rc = filehandle.WritePage(rid.pageNum, buffer);
+	if (rc == -1) {
+		pf->CloseFile(filehandle);
+		return -1;
+	}
 	rc = pf->CloseFile(filehandle);
+	if (rc == -1) {
+		return -1;
+	}
 	free(buffer);
 	return rc;
 }
@@ -545,7 +555,8 @@ RC RM::readAttribute(const string tableName, const RID &rid,
 	RC rc = 0;
 	rc = readTuple(tableName, rid, buffer);
 	unsigned int reclen = 0;
-	getRecordLength(tableName, buffer, reclen);
+	if (rc != -1)
+		getRecordLength(tableName, buffer, reclen);
 	if (rc == -1)
 		return -1;
 	else {
@@ -692,9 +703,9 @@ int RM::gettableID(string tableName) {
 			rc = readTuple("TableInfo", rid, data);
 			if (rc != -1) {
 				tableid = (*(unsigned int*) ((char*) data));
-
 				tablelength = (*(unsigned int*) ((char*) data + 4));
 				memcpy(tablename, (char *) data + 8, tablelength);
+				memcpy(tablename + tablelength, "\0", 1);
 				free(data);
 				if (strcmp(tablename, tableName.c_str()) == 0)
 					return tableid;
