@@ -5,6 +5,7 @@
 #include <set>
 #include <vector>
 #include <iostream>
+#include <string.h>
 using namespace std;
 
 struct CacheBlock {
@@ -50,6 +51,7 @@ public:
 	~PF_FileHandle(); // Destructor
 
 	PF_FileHandle& operator=(const PF_FileHandle &pf) {
+		(this->filename)=pf.filename.c_str();
 		(this->file).copyfmt(pf.file);
 		(this->file).clear(pf.file.rdstate());
 		(this->file).basic_ios<char>::rdbuf(pf.file.rdbuf());
