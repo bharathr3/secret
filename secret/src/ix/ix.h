@@ -10,8 +10,11 @@
 #include "../rm/rm.h"
 
 # define IX_EOF (-1)  // end of the index scan
-const int twice_order = 340;
-const int order = 170;
+/*const int twice_order = 340;
+ const int order = 170;*/
+
+const int twice_order = 312;
+const int order = 156;
 
 using namespace std;
 
@@ -63,15 +66,17 @@ struct internal_node: node<T> {
 template<class T>
 struct leaf_node: node<T> {
 	RID rids[twice_order];
-	int fp;
-	int bp;
+	bool dup[twice_order];
+	int front_ptr;
+	int back_ptr;
 	leaf_node() {
 		for (int i = 0; i < twice_order; i++) {
 			rids[i].pageNum = 4096;
 			rids[i].slotNum = 4096;
+			dup[i] = false;
 		}
-		fp = -1;
-		bp = -1;
+		front_ptr = -1;
+		back_ptr = -1;
 	}
 };
 
@@ -91,23 +96,20 @@ public:
 	//     For varchar: use 4 bytes to store the length of characters, then store the actual characters.
 	RC InsertEntry(void *key, const RID &rid); // Insert new index entry
 	RC DeleteEntry(void *key, const RID &rid); // Delete index entry
-	/*RC IsFree();
-	 RC SetHandle(const char* fileName);
-	 RC DropHandle();*/
-	template<class T> RC insert(int nodepointer, T k, const RID &rid,
-			T &newchildentry, int &page, int fp, int bp);
-	void update_book(int root);
-	template<class T> RC delete1(int nodepointer, T k, RID rid, int &flag);
+
+	template<class T> RC insert_recursive(int nodepointer, T k, const RID &rid,
+			T &newchildentry, int &page, int front_ptr, int back_ptr);
+	void update_index_catalog(int root);
+	template<class T> RC delete_recursive(int nodepointer, T k, RID rid,
+			int &flag);
 };
 
 class IX_IndexScan {
 	vector<RID> rids;
 	unsigned Iterator;
-	int state;
 public:
 	IX_IndexScan() {
 		Iterator = 0;
-		state = 0;
 	}
 	; // Constructor
 	~IX_IndexScan(); // Destructor
@@ -123,35 +125,15 @@ public:
 	RC OpenScan(const IX_IndexHandle &indexHandle, void *lowKey, void *highKey,
 			bool lowKeyInclusive, bool highKeyInclusive);
 
-	template<class T> RC openscan(PF_FileHandle &fileHandle, CompOp compOp,
+	template<class T> RC scan_int(PF_FileHandle &fileHandle, CompOp compOp,
 			T val, int root);
-	template<class T> RC openscan2(PF_FileHandle &fileHandle, CompOp compOp1,
+	template<class T> RC scan_real(PF_FileHandle &fileHandle, CompOp compOp1,
 			CompOp compOp2, T val, T val2, int root);
+
 	RC GetNextEntry(RID &rid); // Get next matching entry
 	RC CloseScan(); // Terminate index scan
 };
 
 // print out the error message for a given return code
 void IX_PrintError(RC rc);
-template<class T> void print_leaf(leaf_node<T> L) {
-	cout << "n:" << L.n << endl;
-	cout << "fp:" << L.fp << endl;
-	int i;
-	for (i = 0; i < twice_order; i++) {
-		cout << L.keys[i] << "\t";
-		cout << "{" << L.rids[i].pageNum << "," << L.rids[i].slotNum << "}"
-				<< endl;
-	}
-	cout << "bp:" << L.bp << endl;
-}
-
-template<class T> void print_node(internal_node<T> N) {
-	//cout<<"flag:"<<N.flag<<endl;
-	cout << "n:" << N.n << endl;
-	int i;
-	for (i = 0; i < twice_order; i++) {
-		cout << N.ptrs[i] << "\t" << N.keys[i] << "\t";
-	}
-	cout << N.ptrs[i] << endl;
-}
 #endif
