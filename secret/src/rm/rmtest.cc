@@ -1,3 +1,4 @@
+/*
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -1115,7 +1116,7 @@ void Tests()
     return;
 }
 
-/*int main()
+int main()
 {
     // Basic Functions
     cout << endl << "Test Basic Functions..." << endl;
@@ -1126,4 +1127,5 @@ void Tests()
     Tests();
 
     return 0;
-}*/
+}
+*/

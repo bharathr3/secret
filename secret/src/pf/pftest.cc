@@ -1,3 +1,4 @@
+/*
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -134,10 +135,11 @@ void pfTest() {
 	PFTest_3(pf);
 }
 
-/*int main()
+int main()
  {
  cout<<"Begin"<<endl;
  pfTest();
  cout<<"End"<<endl;
  return 0;
- }*/
+ }
+*/
