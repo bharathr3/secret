@@ -8,12 +8,12 @@
 #include <string.h>
 using namespace std;
 
-struct CacheBlock {
+/*struct CacheBlock {
 	string fname;
 	int pg_num;
 	void* data;
 	bool d_bit;
-};
+};*/
 
 typedef int RC;
 typedef unsigned PageNum;
@@ -21,11 +21,11 @@ typedef unsigned PageNum;
 #define PF_PAGE_SIZE 4096
 
 class PF_FileHandle;
-class Cache_Policy;
+//class Cache_Policy;
 
 class PF_Manager {
 public:
-	static Cache_Policy *_fifo_cache;
+	//static Cache_Policy *_fifo_cache;
 	static PF_Manager* Instance(int cacheNumPages); // Access to the _pf_manager instance
 	//static CacheRepPolicy *_lru_cache;
 
@@ -65,7 +65,7 @@ public:
 	unsigned GetNumberOfPages(); // Get the number of pages in the file
 };
 
-class Cache_Policy {
+/*class Cache_Policy {
 public:
 	int cache_counter;
 	int num_blocks;
@@ -73,6 +73,6 @@ public:
 
 	Cache_Policy(int numpages);
 	~Cache_Policy();
-};
+};*/
 
 #endif

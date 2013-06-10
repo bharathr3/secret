@@ -141,7 +141,7 @@ public:
 
 	RC reorganizeTable(const string tableName);
 
-protected:
+public:
 	RM();
 	~RM();
 

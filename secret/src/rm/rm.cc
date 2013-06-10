@@ -4,6 +4,7 @@
 #include <map>
 #include <string.h>
 #include <iostream>
+#include <sys/resource.h>
 #include "../pf/pf.h"
 
 using namespace std;
@@ -821,8 +822,11 @@ RC RM_ScanIterator::getNextTuple(RID &rid, void *data) {
 	if (currentrid.pageNum != 5000 && currentrid.slotNum != 5000) {
 		for (int i = currentrid.pageNum; i < num_page; i++) {
 			rc = filehandle.ReadPage(i, page_buffer);
-			if (rc == -1)
+			if (rc == -1) {
+				free(page_buffer);
+				free(rec_attr_val);
 				return -1;
+			}
 			int num_slots =
 					*((unsigned int *) ((char *) page_buffer + 4096 - 8));
 			int tslotnum = 1;
@@ -834,6 +838,8 @@ RC RM_ScanIterator::getNextTuple(RID &rid, void *data) {
 				if (found == 1) {
 					currentrid.pageNum = i;
 					currentrid.slotNum = j;
+					free(page_buffer);
+					free(rec_attr_val);
 					return 0;
 				}
 				if (found == 0) {
@@ -901,7 +907,6 @@ RC RM_ScanIterator::getNextTuple(RID &rid, void *data) {
 					case NO_OP:
 						found = 1;
 						break;
-
 					}
 					if (found == 1) {
 						void *record = malloc(4096);

@@ -49,14 +49,13 @@ public:
 	RM &rm;
 	RM_ScanIterator *iter;
 	string tablename;
+	string alias;
 	vector<Attribute> attrs;
 	vector<string> attrNames;
-
 	TableScan(RM &rm, const string tablename, const char *alias = NULL) :
 			rm(rm) {
 		// Get Attributes from RM
 		rm.getAttributes(tablename, attrs);
-
 		// Get Attribute Names from RM
 		unsigned i;
 		for (i = 0; i < attrs.size(); ++i) {
@@ -66,14 +65,14 @@ public:
 		// Call rm scan to get iterator
 		iter = new RM_ScanIterator();
 		rm.scan(tablename, "", NO_OP, NULL, attrNames, *iter);
-
 		// Store tablename
 		this->tablename = tablename;
 		if (alias)
-			this->tablename = alias;
+			this->alias = alias;
+		else
+			this->alias = tablename;
 	}
 	;
-
 	// Start a new iterator given the new compOp and value
 	void setIterator() {
 		iter->close();
@@ -82,28 +81,24 @@ public:
 		rm.scan(tablename, "", NO_OP, NULL, attrNames, *iter);
 	}
 	;
-
 	RC getNextTuple(void *data) {
 		RID rid;
 		return iter->getNextTuple(rid, data);
 	}
 	;
-
 	void getAttributes(vector<Attribute> &attrs) const {
 		attrs.clear();
 		attrs = this->attrs;
 		unsigned i;
-
-		// For attribute in vector<Attribute>, name it as rel.attr
+		// For attribute in vector, name it as rel.attr
 		for (i = 0; i < attrs.size(); ++i) {
-			string tmp = tablename;
+			string tmp = alias;
 			tmp += ".";
 			tmp += attrs[i].name;
 			attrs[i].name = tmp;
 		}
 	}
 	;
-
 	~TableScan() {
 		iter->close();
 	}
@@ -115,7 +110,7 @@ class IndexScan: public Iterator {
 public:
 	RM &rm;
 	IX_IndexScan *iter;
-	IX_IndexHandle handle;
+	IX_IndexHandle *handle;
 	string tablename;
 	vector<Attribute> attrs;
 
@@ -132,7 +127,7 @@ public:
 
 		// Store Index Handle
 		iter = NULL;
-		this->handle = indexHandle;
+		this->handle = const_cast<IX_IndexHandle*>(&indexHandle);
 	}
 	;
 
@@ -144,7 +139,7 @@ public:
 			delete iter;
 		}
 		iter = new IX_IndexScan();
-		iter->OpenScan(handle, lowKey, highKey, lowKeyInclusive,
+		iter->OpenScan(*handle, lowKey, highKey, lowKeyInclusive,
 				highKeyInclusive);
 	}
 	;
@@ -183,8 +178,8 @@ public:
 class Filter: public Iterator {
 	// Filter operator
 	vector<Attribute> attrs;
-	vector<void*> dataselect;
-	vector<int> len;
+	vector<void*> filter_data;
+	vector<int> filter_length;
 	int iterator, count;
 
 public:
@@ -201,8 +196,8 @@ public:
 class Project: public Iterator {
 	// Projection operator
 	vector<Attribute> attrs;
-	vector<void*> dataproject;
-	vector<int> len;
+	vector<void*> projection_data;
+	vector<int> projection_length;
 	int iterator, count;
 public:
 	Project(Iterator *input, // Iterator of input R
@@ -217,8 +212,8 @@ public:
 class NLJoin: public Iterator {
 	// Nested-Loop join operator
 	vector<Attribute> attrs;
-	vector<void*> datanljoin;
-	vector<int> len;
+	vector<void*> nljoin_data;
+	vector<int> nljoin_length;
 	int iterator, count;
 public:
 	NLJoin(Iterator *leftIn, // Iterator of input R
@@ -236,8 +231,8 @@ public:
 class INLJoin: public Iterator {
 	// Index Nested-Loop join operator
 	vector<Attribute> attrs;
-	vector<void*> datainljoin;
-	vector<int> len;
+	vector<void*> inljoin_data;
+	vector<int> inljoin_length;
 	int iterator, count;
 public:
 	INLJoin(Iterator *leftIn, // Iterator of input R
@@ -255,6 +250,10 @@ public:
 
 class Aggregate: public Iterator {
 	// Aggregation operator
+	vector<Attribute> attrs;
+	vector<void*> aggregate_data;
+	vector<int> aggregate_length;
+	int iterator, count;
 public:
 	Aggregate(Iterator *input, // Iterator of input R
 			Attribute aggAttr, // The attribute over which we are computing an aggregate
@@ -270,10 +269,7 @@ public:
 
 	~Aggregate();
 
-	RC getNextTuple(void *data) {
-		return QE_EOF;
-	}
-	;
+	RC getNextTuple(void *data);
 	// Please name the output attribute as aggregateOp(aggAttr)
 	// E.g. Relation=rel, attribute=attr, aggregateOp=MAX
 	// output attrname = "MAX(rel.attr)"

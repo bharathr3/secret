@@ -1,8 +1,9 @@
 #include <fstream>
 #include <iostream>
 #include <cassert>
-#include <vector>
 #include <stdlib.h>
+#include <vector>
+
 #include "qe.h"
 
 using namespace std;
@@ -18,6 +19,7 @@ const int tuplecount = 1000;
 
 // Buffer size and character buffer size
 const unsigned bufsize = 200;
+
 
 void createLeftTable()
 {
@@ -877,7 +879,6 @@ void testCase_10()
     return;
 }
 
-/*
 
 void extraTestCase_1()
 {
@@ -1021,7 +1022,6 @@ void extraTestCase_4()
     free(data);
     return;
 }
-*/
 
 
 int main() 
@@ -1057,10 +1057,10 @@ int main()
     testCase_10();
 
     // Extra Credit
-    /*extraTestCase_1();
+    extraTestCase_1();
     extraTestCase_2();
     extraTestCase_3();
-    extraTestCase_4();*/
+    extraTestCase_4();
 
     return 0;
 }
